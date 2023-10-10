@@ -3,6 +3,10 @@ package model
 data class Dictionary(
     private val keyValueStore: Map<String, String>
 ) {
+
+    val digitsNumber: Int
+        get() = keyValueStore.keys.first().length
+
     fun get(key: String) = keyValueStore[key]
 
     fun put(key: String, value: String): Dictionary {

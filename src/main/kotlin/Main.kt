@@ -17,10 +17,7 @@ fun main() {
     println("Введите зашифрованную строку")
     val encryptedString = readln()
 
-    println("Введите порядок алфавита")
-    val digitsNumber = readln().toInt()
-
-    val decryptedString = Decrypter.decrypt(encryptedString = encryptedString, digitsNumber = digitsNumber, dictionary)
+    val decryptedString = Decrypter.decrypt(encryptedString = encryptedString, digitsNumber = dictionary.digitsNumber, dictionary)
 
     println("Расшифрованная строка: $decryptedString")
 }
