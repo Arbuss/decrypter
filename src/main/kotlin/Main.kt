@@ -1,40 +1,59 @@
+import command.CommandHandler
+import config.Config
 import decrypter.Decrypter
+import logger.BaseLogger
+import logger.FileLogger
 import model.Dictionary
-import reader.Reader
+import printer.Printer
+import printer.TerminalPrinter
+import reader.ConsoleReader
+import reader.FileReader
 
-const val EXIT_COMMAND = "exit"
 
 fun main() {
-    val reader = Reader()
+    val logger: BaseLogger = FileLogger()
 
-    println("Введите название файла словаря")
-    val path = readln()
+    val fileReader = FileReader(logger = logger)
+    val consoleReader = ConsoleReader(logger = logger)
+    val printer: Printer = TerminalPrinter(logger = logger)
+    val commandHandler = CommandHandler(logger = logger, printer = printer)
 
-    val keyValueMap = reader.read("dictionary/$path")
+    printer.print("Введите название файла словаря")
+    val path = consoleReader.readLine()
+    commandHandler.handle(path)
+
+    val dictionaryList = fileReader.read(path = "dictionary/$path")
         .replace("\n", "")
-        .replace("\r", "").split("|").associate {
-            val list = it.split("'")
-            list.first() to list.last()
-        }
-    val dictionary = Dictionary(keyValueStore = keyValueMap)
-
-    var commandString = ""
-    while (commandString != EXIT_COMMAND) {
-        println("Введите зашифрованную строку")
-        val encryptedString = readln()
-        if (encryptedString.lowercase() == EXIT_COMMAND) {
-            commandString = encryptedString
-        } else {
-            if (encryptedString.length.mod(dictionary.digitsNumber) != 0) {
-                println("Длина не соответствует порядку алфавита, длина = ${encryptedString.length}, порядок = ${dictionary.digitsNumber}")
-            }
-
-            val decryptionResult =
-                Decrypter.decrypt(encryptedString = encryptedString, digitsNumber = dictionary.digitsNumber, dictionary)
-
-            println("Расшифрованная строка: ${decryptionResult.text}")
-            println("Количество ошибок: ${decryptionResult.errorCount}")
-        }
+        .replace("\r", "").split("|")
+    val keyValueMap = dictionaryList.associate {
+        val list = it.split("'")
+        list.first() to list.last()
     }
-    println("Программа завершена")
+    val keyValueMapReverted = dictionaryList.associate {
+        val list = it.split("'")
+        list.last() to list.first()
+    }
+    val dictionary =
+        Dictionary(keyValueStore = keyValueMap, keyValueStoreReverted = keyValueMapReverted, logger = logger)
+
+    val decrypter = Decrypter(dictionary = dictionary, logger = logger)
+
+    while (true) {
+        printer.print("Введите зашифрованную строку")
+        val encryptedString = consoleReader.readLine()
+
+        if (commandHandler.handle(encryptedString)) {
+            continue
+        }
+
+        if (encryptedString.length.mod(dictionary.digitsNumber) != 0) {
+            printer.print("Длина не соответствует порядку алфавита, длина = ${encryptedString.length}, порядок = ${dictionary.digitsNumber}")
+        }
+
+        val decryptionResult =
+            decrypter.decrypt(encryptedString = encryptedString, isReverted = Config.revertDictionary)
+
+        printer.print("Расшифрованная строка: ${decryptionResult.text}")
+        printer.print("Количество ошибок: ${decryptionResult.errorCount}")
+    }
 }

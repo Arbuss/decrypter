@@ -1,13 +1,23 @@
 package model
 
+import logger.BaseLogger
+
 data class Dictionary(
-    private val keyValueStore: Map<String, String>
+    private val keyValueStore: Map<String, String>,
+    private val keyValueStoreReverted: Map<String, String>,
+    private val logger: BaseLogger
 ) {
 
     val digitsNumber: Int
         get() = keyValueStore.keys.first().length
 
-    fun get(key: String) = keyValueStore[key]
+    fun get(key: String, isReverted: Boolean): String? {
+        return if (isReverted) {
+            keyValueStoreReverted[key]
+        } else {
+            keyValueStore[key]
+        }
+    }
 
     fun put(key: String, value: String): Dictionary {
         val map = keyValueStore.toMutableMap()
